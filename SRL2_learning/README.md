@@ -97,6 +97,12 @@ python SRL2_learning/scripts/run_cartesian_target_experiment.py
 - flange frame
 - tool frame
 
+并且每组坐标系原点旁边会显示名字：
+- `world`
+- `base`
+- `flange`
+- `tool`
+
 颜色固定为：
 - X 轴红色
 - Y 轴绿色

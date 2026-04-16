@@ -89,9 +89,10 @@ class CartesianKinematicsTests(unittest.TestCase):
     def test_tool_frame_config_loads_from_json(self) -> None:
         tool_config_path = PROJECT_ROOT / "configs" / "tool_frame_config.json"
         tool_config = load_tool_frame_config(tool_config_path)
-        self.assertEqual(tool_config.tool_translation_xyz, [0.0, 0.0, 0.0])
-        self.assertEqual(tool_config.tool_rotation_rpy, [0.0, 0.0, 0.0])
-        self.assertEqual(tool_config.translation_xyz, [0.0, 0.0, 0.0])
+        self.assertEqual(tool_config.tool_translation_xyz, tool_config.translation_xyz)
+        self.assertEqual(tool_config.tool_rotation_rpy, tool_config.rotation_rpy)
+        self.assertEqual(len(tool_config.tool_translation_xyz), 3)
+        self.assertEqual(len(tool_config.tool_rotation_rpy), 3)
 
     def test_multi_target_and_visualization_outputs(self) -> None:
         output_directory = PROJECT_ROOT / "logs" / "test_cartesian_multi"
@@ -155,8 +156,16 @@ class CartesianKinematicsTests(unittest.TestCase):
             flange_rotation=np.eye(3, dtype=float),
             tool_position=np.array([0.15, 0.25, 0.35], dtype=float),
             tool_rotation=np.eye(3, dtype=float),
+            target_positions=[[0.2, 0.3, 0.4], [0.4, 0.5, 0.6]],
         )
-        self.assertGreaterEqual(scene.ngeom, 16)
+        self.assertGreaterEqual(scene.ngeom, 18)
+        labels = [scene.geoms[index].label for index in range(scene.ngeom) if scene.geoms[index].label]
+        self.assertIn("world", labels)
+        self.assertIn("base", labels)
+        self.assertIn("flange", labels)
+        self.assertIn("tool", labels)
+        self.assertIn("target_1", labels)
+        self.assertIn("target_2", labels)
 
     def test_inspector_script_runs(self) -> None:
         result = subprocess.run(

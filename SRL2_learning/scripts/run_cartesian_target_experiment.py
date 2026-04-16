@@ -80,9 +80,12 @@ def _build_frame_visualization_config(config: dict) -> FrameVisualizationConfig:
         show_base_frame=bool(config.get("show_base_frame", True)),
         show_flange_frame=bool(config.get("show_flange_frame", True)),
         show_tool_frame=bool(config.get("show_tool_frame", True)),
+        show_target_point=bool(config.get("show_target_point", True)),
+        show_frame_names=bool(config.get("show_frame_names", True)),
         frame_axis_length=float(config.get("frame_axis_length", 0.12)),
         frame_axis_radius=float(config.get("frame_axis_radius", 0.008)),
         frame_origin_radius=float(config.get("frame_origin_radius", 0.014)),
+        target_marker_radius=float(config.get("target_marker_radius", 0.018)),
         world_frame_origin=[float(value) for value in config.get("world_frame_origin", [0.0, 0.0, 0.0])],
         print_frame_pose_each_step=bool(config.get("print_frame_pose_each_step", False)),
         print_frame_pose_every_n_steps=int(config.get("print_frame_pose_every_n_steps", 10)),
@@ -198,6 +201,7 @@ def main() -> None:
                 frame_config=frame_visualization_config,
                 tool_frame=tool_frame if config["use_tool_frame"] else None,
                 target_position=target_position,
+                target_positions=result.target_positions,
             )
         return
 
@@ -221,6 +225,7 @@ def main() -> None:
                 frame_config=frame_visualization_config,
                 tool_frame=tool_frame if config["use_tool_frame"] else None,
                 target_position=result.target_positions[-1],
+                target_positions=result.target_positions,
             )
         return
 
@@ -250,6 +255,7 @@ def main() -> None:
                 frame_config=frame_visualization_config,
                 tool_frame=tool_cases[0],
                 target_position=target_position,
+                target_positions=[target_position],
             )
         return
 
