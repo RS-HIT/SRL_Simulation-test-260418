@@ -1,0 +1,137 @@
+<mujoco model="Humanoid">
+    <!--  Copyright © 2018, Roboti LLC
+
+          This file is licensed under the MuJoCo Resource License (the "License").
+          You may not use this file except in compliance with the License.
+          You may obtain a copy of the License at
+
+            https://www.roboti.us/resourcelicense.txt
+    -->
+
+    <compiler inertiafromgeom="true" angle="degree"/>
+
+    <default>
+        <joint limited="true" damping="1" armature="0"/>
+        <geom condim="1" material="matgeom"/>
+        <motor ctrlrange="-.4 .4" ctrllimited="true"/>
+    </default>
+
+    <option timestep="0.005" iterations="50" tolerance="1e-10" solver="Newton" jacobian="dense" cone="pyramidal" gravity="0 0 0"/>
+
+    <size nconmax="50" njmax="200" nstack="10000"/>
+
+    <visual>
+        <map force="0.1" zfar="30"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <quality shadowsize="2048"/>
+        <global offwidth="800" offheight="800"/>
+    </visual>
+
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/> 
+
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>  
+
+        <texture name="texgeom" type="cube" builtin="flat" mark="cross" width="127" height="1278" 
+            rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>  
+
+        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1" texuniform="true"/>
+
+        <material name="matgeom" texture="texgeom" texuniform="true" rgba="0.8 0.6 .4 1"/>
+    </asset>
+
+
+    <worldbody>
+        <geom name="floor" pos="0 0 0" size="0 0 .25" type="plane" material="matplane" condim="3"/>
+        <light directional="false" diffuse=".2 .2 .2" specular="0 0 0" pos="0 0 5" dir="0 0 -1" castshadow="false"/>
+        <light mode="targetbodycom" target="torso" directional="false" diffuse=".8 .8 .8" specular="0.3 0.3 0.3" pos="0 0 4.0" dir="0 0 -1"/>       
+
+         <!-- body1：1、2、3 -->
+        <body name="torso" pos="0 0 1.4" euler="0 0 0" >
+            <freejoint name="root"/>
+             <!-- 胶囊1 -->
+            <geom name="torso1" type="capsule" fromto="0 -.07 0 0 .07 0"  size="0.07"/>
+             <!-- 头-->
+            <geom name="head" type="sphere" pos="0 0 .19" size=".09"/>
+            <!-- 胶囊2-->
+            <geom name="uwaist" type="capsule" fromto="-.01 -.06 -.12 -.01 .06 -.12" size="0.06"/>
+
+             <!--body2： 胶囊3-->
+            <body name="lwaist" pos="-.01 0 -0.260" quat="1.000 0 -0.002 0" >
+                <geom name="lwaist" type="capsule" fromto="0 -.06 0 0 .06 0"  size="0.06" />
+             <!-- body3：胶囊4-->
+             <body name="pelvis" pos="0 0 -0.165" quat="1.000 0.0 -0.002 0" >
+                    <geom name="butt" type="capsule" fromto="-.02 -.07 0 -.02 .07 0"  size="0.09" />
+                    <!-- 右腿模型构建 -->
+                    <body name="right_thigh" pos="0 -0.1 -0.04" >
+                        <geom name="right_thigh1" type="capsule" fromto="0 0 0 0 0.01 -.34"  size="0.06" />
+                        <body name="right_shin" pos="0 0.01 -0.403" >
+                            <geom name="right_shin1" type="capsule" fromto="0 0 0 0 0 -.3"   size="0.049" />
+                            <body name="right_foot" pos="0 0 -.39" >
+                                <geom name="right_foot_cap1" type="capsule" fromto="-.07 -0.02 0 0.14 -0.04 0"  size="0.027" />
+                                <geom name="right_foot_cap2" type="capsule" fromto="-.07 0 0 0.14  0.02 0"  size="0.027" />
+                            </body>
+                        </body>
+                    </body>
+                    <!-- 左腿模型构建 -->
+                    <body name="left_thigh" pos="0 0.1 -0.04" >
+                        <geom name="left_thigh1" type="capsule" fromto="0 0 0 0 -0.01 -.34"  size="0.06" />
+                        <body name="left_shin" pos="0 -0.01 -0.403" >
+                            <geom name="left_shin1" type="capsule" fromto="0 0 0 0 0 -.3"   size="0.049" />
+                            <body name="left_foot" pos="0 0 -.39" >
+                                <geom name="left_foot_cap1" type="capsule" fromto="-.07 0.02 0 0.14 0.04 0"  size="0.027" />
+                                <geom name="left_foot_cap2" type="capsule" fromto="-.07 0 0 0.14  -0.02 0"  size="0.027" />
+                            </body>
+                        </body>
+                    </body>
+
+                </body>   <!--对应body3 -->
+            </body>       <!--对应body2 -->
+
+            
+              <!-- 右臂模型构建 -->
+            <body name="right_upper_arm" pos="0 -0.17 0" >
+              <!--
+                <joint name="right_shoulder1" type="hinge" pos="0 0 0" axis="1 0 0"  range="-85 60" stiffness="1" armature="0.0068" />
+                <joint name="right_shoulder2" type="hinge" pos="0 0 0" axis="0 -1 0" range="-85 60" stiffness="1"  armature="0.0051" />
+                <joint name="right_shoulder3" type="hinge" pos="0 0 0" axis="0 0 1" range="-85 60" stiffness="1"  armature="0.0051" /> -->
+
+                <joint name="right_shoulder" type="ball" pos="0 0 0" stiffness="1" armature="0.0068" />
+
+                <geom name="right_uarm1" type="capsule" fromto="0 0 0 0.20 0 0"  size="0.04 0.16" />
+
+                <body name="right_lower_arm" pos="0.2 0 0" >
+                    <joint name="right_elbow" type="hinge" pos="0 0 0" axis="0 -1 0" range="-90 50"  stiffness="0" armature="0.0028" />
+                    <geom name="right_larm" type="capsule" fromto="0.0 0.0 0.0 .25 .0 .0"  size="0.031" />
+                    <geom name="right_hand" type="sphere" pos=".25 .0 .0"  size="0.04"/>
+                </body>
+            </body>
+
+
+             <!-- 左臂模型构建 -->>
+          
+             <body name="left_upper_arm" pos="0 0.17 0" >
+              <!--
+                <joint name="left_shoulder1" type="hinge" pos="0 0 0" axis="1 0 0" range="-180 180" stiffness="1" armature="0.0068" />
+                <joint name="left_shoulder2" type="hinge" pos="0 0 0" axis="0 -1 0" range="-180 180"  stiffness="1" armature="0.0051" />
+                <joint name="left_shoulder3" type="hinge" pos="0 0 0" axis="0 0 1" range="-85 60" stiffness="1"  armature="0.0051" />  -->
+
+                <joint name="left_shoulder" type="ball" pos="0 0 0" stiffness="1" armature="0.0068" />
+                <geom name="left_uarm1" type="capsule" fromto="0 0 0 0.20 0 0"  size="0.04 0.16" />
+                <body name="left_lower_arm"  pos="0.2 0 0" >
+                    <joint name="left_elbow" type="hinge" pos="0 0 0" axis="0 -1 0" range="-90 50" stiffness="0" armature="0.0028" />
+                    <geom name="left_larm" type="capsule" fromto="0.0 0.0 0.0 .25 .0 .0"  size="0.031" />
+                    <geom name="left_hand" type="sphere" pos=".25 .0 .0"  size="0.04"/>
+                </body>
+            </body>
+
+
+
+        </body>  <!--对应body1 -->
+    </worldbody>
+
+    <actuator>
+    </actuator>
+
+</mujoco>

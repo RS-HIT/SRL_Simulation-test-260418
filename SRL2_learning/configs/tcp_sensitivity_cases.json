@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "enabled": true,
+      "label": "tcp_center",
+      "translation_xyz": [0.0, 0.0, 0.0],
+      "rotation_rpy": [0.0, 0.0, 0.0]
+    },
+    {
+      "enabled": true,
+      "label": "tcp_forward_5cm",
+      "translation_xyz": [0.05, 0.0, 0.0],
+      "rotation_rpy": [0.0, 0.0, 0.0]
+    },
+    {
+      "enabled": true,
+      "label": "tcp_up_5cm",
+      "translation_xyz": [0.0, 0.0, 0.05],
+      "rotation_rpy": [0.0, 0.0, 0.0]
+    }
+  ]
+}

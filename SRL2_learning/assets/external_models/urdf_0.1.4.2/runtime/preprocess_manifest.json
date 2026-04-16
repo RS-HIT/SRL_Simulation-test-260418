@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "source_urdf_path": "E:\\project\\codetest\\urdf_0.1.4.2\\urdf\\urdf_0.1.4.2.urdf",
+  "source_urdf_size": 5183,
+  "source_urdf_mtime": 1775137519,
+  "mesh_face_limits": {
+    "base.STL": null,
+    "Link1.STL": 150000,
+    "Link2.STL": 150000,
+    "Link3.STL": null
+  },
+  "base_position": [
+    0.0,
+    0.0,
+    0.65
+  ],
+  "base_euler": [
+    1.5708,
+    0.0,
+    -1.5708
+  ],
+  "ground_height": 0.0,
+  "add_ground_plane": false,
+  "default_joint_limit": [
+    -3.14159,
+    3.14159
+  ],
+  "source_mesh_states": {
+    "base.STL": {
+      "size": 2391984,
+      "mtime": 1775137513
+    },
+    "Link1.STL": {
+      "size": 15930684,
+      "mtime": 1775137512
+    },
+    "Link2.STL": {
+      "size": 9194384,
+      "mtime": 1775137509
+    },
+    "Link3.STL": {
+      "size": 856284,
+      "mtime": 1775137505
+    }
+  },
+  "mesh_infos": [
+    {
+      "mesh_name": "base.STL",
+      "source_face_count": 47838,
+      "output_face_count": 47838,
+      "target_face_count": null,
+      "was_decimated": false
+    },
+    {
+      "mesh_name": "Link1.STL",
+      "source_face_count": 318612,
+      "output_face_count": 150000,
+      "target_face_count": 150000,
+      "was_decimated": true
+    },
+    {
+      "mesh_name": "Link2.STL",
+      "source_face_count": 183886,
+      "output_face_count": 150000,
+      "target_face_count": 150000,
+      "was_decimated": true
+    },
+    {
+      "mesh_name": "Link3.STL",
+      "source_face_count": 17124,
+      "output_face_count": 17124,
+      "target_face_count": null,
+      "was_decimated": false
+    }
+  ]
+}

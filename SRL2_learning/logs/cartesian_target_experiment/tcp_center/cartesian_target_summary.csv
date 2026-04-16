@@ -1,0 +1,2 @@
+﻿experiment_case_id,target_index,target_x,target_y,target_z,final_x,final_y,final_z,final_error_x,final_error_y,final_error_z,final_error_norm,converged,ik_iterations,hold_steps,tcp_label
+tcp_case_1,0,0.106287,-0.41627,1.132398,0.10590972143006747,-0.41662970196998367,1.1320987374050893,0.0003772785699325404,0.0003597019699836945,0.00029926259491075413,0.0006010679888774743,True,5,20,tcp_center

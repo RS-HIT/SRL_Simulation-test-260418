@@ -1,0 +1,23 @@
+{
+  "source_urdf_path": "../../urdf_0.1.4.2/urdf/urdf_0.1.4.2.urdf",
+  "control_period_seconds": 0.02,
+  "start_joint_position": [0.0, 0.0, 0.0],
+  "target_joint_position": [0.45, -0.7, 0.9],
+  "max_velocity": 0.6,
+  "max_acceleration": 0.6,
+  "base_height": 0.65,
+  "default_joint_limit": [-3.14159, 3.14159],
+  "end_effector_offset": [0.0, -0.22, 0.0],
+  "viewer_enabled": false,
+  "viewer_startup_pause_seconds": 0.8,
+  "viewer_keep_open_after_replay": true,
+  "playback_speed": 0.35,
+  "offscreen_render_enabled": true,
+  "render_width": 960,
+  "render_height": 720,
+  "render_fps": 30,
+  "output_directory_name": "urdf_mujoco_demo",
+  "plot_title_prefix": "URDF 简化 MuJoCo 仿真",
+  "observed_site_names": ["tool_site", "Link3_site"],
+  "dump_runtime_xml_copy": true
+}

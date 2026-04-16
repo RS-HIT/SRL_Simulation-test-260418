@@ -1,0 +1,224 @@
+<mujoco model="Rasras_2s1.SLDASM">
+    <compiler angle="radian" meshdir="/home/user/zqh/meshes/" />
+     <!-- <compiler angle="radian" meshdir= "/home/zqh/zqh/hitExoLimb-xxxx/simulation/pose_mujoco/Rasras_2s1.SLDASM/meshes/" /> -->
+     <size njmax="500" nconmax="100" />
+     <size nconmax="50" njmax="200" nstack="10000"/>
+     <default>
+        <geom condim="1" material="matgeom"/>
+    </default> 
+     <option timestep="0.005" iterations="50" solver="Newton" tolerance="1e-10"   jacobian="dense" cone="pyramidal" gravity="0.0 0.0 0.0"/>
+     <!--collision="predefined"-->
+     <visual>
+        <map force="0.1" zfar="30"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <quality shadowsize="2048"/>
+        <global offwidth="800" offheight="800"/>
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/> 
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>  
+        <texture name="texgeom" type="cube" builtin="flat" mark="cross" width="127" height="1278" 
+            rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>  
+        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1" texuniform="true"/>
+        <material name="matgeom" texture="texgeom" texuniform="true" rgba="0.8 0.6 .4 1"/>
+        <mesh name="back" file="back.STL" />
+        <mesh name="Link1_r" file="Link1_r.STL" />
+        <mesh name="Link2_r" file="Link2_r.STL" />
+        <mesh name="Link3_r" file="Link3_r.STL" />
+        <mesh name="Link4_r" file="Link4_r.STL" />
+        <mesh name="Link5_r" file="Link5_r.STL" />
+        <mesh name="Link6_r" file="Link6_r.STL" />
+        <mesh name="Link1_l" file="Link1_l.STL" />
+        <mesh name="Link2_l" file="Link2_l.STL" />
+        <mesh name="Link3_l" file="Link3_l.STL" />
+        <mesh name="Link4_l" file="Link4_l.STL" />
+        <mesh name="Link5_l" file="Link5_l.STL" />
+        <mesh name="Link6_l" file="Link6_l.STL" />
+    </asset>
+<worldbody>
+         <geom name="floor" pos="0 0 0" size="0 0 .25" type="plane" material="matplane" condim="3"/>
+         <light directional="false" diffuse=".2 .2 .2" specular="0 0 0" pos="0 0 5" dir="0 0 -1" castshadow="false"/>
+         <light mode="targetbodycom" target="torso" directional="false" diffuse=".8 .8 .8" specular="0.3 0.3 0.3" pos="0 0 4.0" dir="0 0 -1"/> 
+                     <!-- limb0 -->
+     <body name="dummpy_back" pos="0 0 0" euler="0 0 0" >
+      <freejoint name="limb_j"/>
+                    <!-- body_limb_0 --> 
+     <body name="backboard" pos="0.06625 -0.1675 -0.09135" euler="0 0 0" >
+        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="back" />
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="back" /> 
+  
+        <body name="Link1_r" pos="0 0 0">
+            <inertial pos="0.03744 -6.32191e-05 0.0898046" quat="0.542829 0.453396 0.452744 0.542947" mass="1.11245" diaginertia="0.00164399 0.00121764 0.0010799" />
+            <joint name="joint1_r" pos="0 0 0" axis="0 0 1" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link1_r" />
+            <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link1_r" />
+            <site name="origin_dummy_r" pos="0 0 0" size="0.04" />
+
+            <body name="Link2_r" pos="0.083 0 0.09315">
+                <inertial pos="0.205707 -0.0001747 -0.00313993" quat="0.483851 0.515809 0.511948 0.487584" mass="0.348736" diaginertia="0.000635422 0.000606072 8.90075e-05" />
+                <joint name="joint2_r" pos="0 0 0" axis="0 -1 0" />
+                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link2_r" />
+                <geom type="mesh" name= "l2_r" rgba="0.752941 0.752941 0.752941 1" mesh="Link2_r" />
+                <body name="Link3_r" pos="0.39094 0 -0.029583">
+                    <inertial pos="0.126901 4.50392e-05 0.0228136" quat="0.524455 0.474599 0.473957 0.524468" mass="0.330625" diaginertia="0.000460331 0.000424556 0.000103961" />
+                    <joint name="joint3_r" pos="0 0 0" axis="0 -1 0" />
+                    <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link3_r" />
+                    <geom type="mesh" name= "l3_r" rgba="0.752941 0.752941 0.752941 1"  mesh="Link3_r" />
+                    <body name="Link4_r" pos="0.33154 0 0.028583">
+                        <inertial pos="0.011945 0.000681491 0.000631388" quat="0.270507 0.653331 0.270682 0.653235" mass="0.10584" diaginertia="2.97897e-05 2.83802e-05 2.06298e-05" />
+                        <joint name="joint4_r" pos="0 0 0" axis="0 0 1" />
+                        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.698039 0.698039 0.698039 1" mesh="Link4_r" />
+                        <geom type="mesh" rgba="0.698039 0.698039 0.698039 1" mesh="Link4_r" />
+                        <body name="Link5_r" pos="0.023945 0 0">
+                            <inertial pos="0.0397421 4.99911e-05 0.0109303" quat="0.703324 0.0730473 0.0730533 0.703323" mass="0.102904" diaginertia="2.96671e-05 2.35478e-05 1.72507e-05" />
+                            <joint name="joint5_r" pos="0 0 0" axis="0 -1 0" />
+                            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link5_r" />
+                            <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link5_r" />
+                            <body name="Link6_r" pos="0.067104 0 0">
+                                <inertial pos="-0.00328947 2.63719e-05 0.0162948" quat="0.999992 0.000457221 -0.00404015 -6.55525e-06" mass="0.00758217" diaginertia="4.6713e-06 3.08404e-06 1.61392e-06" />
+                                <joint name="joint6_r" pos="0 0 0" axis="-1 0 0" />
+                                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link6_r" />
+                                <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link6_r" />
+                                <site name="robot_tip_r" pos="0 0 0" size="0.05" />
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+        <body name="Link1_l" pos="0 0.317 0">
+            <inertial pos="0.03744 -6.32191e-05 0.0898046" quat="0.542829 0.453396 0.452744 0.542947" mass="1.11245" diaginertia="0.00164399 0.00121764 0.0010799" />
+            <joint name="joint1_l" pos="0 0 0" axis="0 0 1" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link1_l" />
+            <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link1_l" />
+            <body name="Link2_l" pos="0.083 0 0.09315">
+                <inertial pos="0.205707 -0.0001747 -0.00313993" quat="0.483851 0.515809 0.511948 0.487584" mass="0.348736" diaginertia="0.000635422 0.000606072 8.90075e-05" />
+                <joint name="joint2_l" pos="0 0 0" axis="0 -1 0" />
+                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link2_l" />
+                <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link2_l" />
+                <body name="Link3_l" pos="0.39094 0 -0.029583">
+                    <inertial pos="0.126901 4.50392e-05 0.0228136" quat="0.524455 0.474599 0.473957 0.524468" mass="0.330625" diaginertia="0.000460331 0.000424556 0.000103961" />
+                    <joint name="joint3_l" pos="0 0 0" axis="0 -1 0" />
+                    <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link3_l" />
+                    <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link3_l" />
+                    <body name="Link4_l" pos="0.33154 0 0.028583">
+                        <inertial pos="0.011945 0.000681491 0.000631388" quat="0.270507 0.653331 0.270682 0.653235" mass="0.10584" diaginertia="2.97897e-05 2.83802e-05 2.06298e-05" />
+                        <joint name="joint4_l" pos="0 0 0" axis="0 0 1" />
+                        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.698039 0.698039 0.698039 1" mesh="Link4_l" />
+                        <geom type="mesh" rgba="0.698039 0.698039 0.698039 1" mesh="Link4_l" />
+                        <body name="Link5_l" pos="0.023945 0 0">
+                            <inertial pos="0.0397421 4.99911e-05 0.0109303" quat="0.703324 0.0730473 0.0730533 0.703323" mass="0.102904" diaginertia="2.96671e-05 2.35478e-05 1.72507e-05" />
+                            <joint name="joint5_l" pos="0 0 0" axis="0 -1 0" />
+                            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link5_l" />
+                            <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link5_l" />
+                            <body name="Link6_l" pos="0.0671038 0 0">
+                                <inertial pos="-0.00328947 2.63719e-05 0.0162948" quat="0.999992 0.000457221 -0.00404015 -6.55525e-06" mass="0.00758217" diaginertia="4.6713e-06 3.08404e-06 1.61392e-06" />
+                                <joint name="joint6_l" pos="0 0 0" axis="-1 0 0" />
+                                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.752941 0.752941 0.752941 1" mesh="Link6_l" />
+                                <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link6_l" />
+                                <site name="robot_tip_l" pos="0 0 0" size="0.05" />
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+     </body>  <!-- 对应 body_limb_0 --> 
+
+     
+       <!-- body0 humanbody_first-->
+      <body name="dummpy_human" pos="0.19625 -0.2325 -0.11135" euler="0 0 0" >
+
+       <!--  <freejoint name="human_j"/> -->
+        <!-- body1：1、2、3 -->
+        <body name="torso" pos="0 0.19 0" euler="0 0 0" >
+             <!-- 胶囊1 -->
+            <geom name="torso1" type="capsule" fromto="0 -.07 0 0 .07 0"  size="0.07"/>
+             <!-- 头-->
+            <geom name="head" type="sphere" pos="0 0 .19" size=".09"/>
+            <!-- 胶囊2-->
+            <geom name="uwaist" type="capsule" fromto="-.01 -.06 -.12 -.01 .06 -.12" size="0.06"/>
+
+             <!--body2： 胶囊3-->
+            <body name="lwaist" pos="-.01 0.0 -0.260" quat="1.000 0 -0.002 0" >
+                <geom name="lwaist" type="capsule" fromto="0 -.06 0 0 .06 0"  size="0.06" />
+             <!-- body3：胶囊4-->
+             <body name="pelvis" pos="0 0 -0.165" quat="1.000 0.0 -0.002 0" >
+                    <geom name="butt" type="capsule" fromto="-.02 -.07 0 -.02 .07 0"  size="0.09" />
+                    <!-- 右腿模型构建 -->
+                    <body name="right_thigh" pos="0 -0.1 -0.04" >
+                        <geom name="right_thigh1" type="capsule" fromto="0 0 0 0 0.01 -.34"  size="0.06" />
+                        <body name="right_shin" pos="0 0.01 -0.403" >
+                            <geom name="right_shin1" type="capsule" fromto="0 0 0 0 0 -.3"   size="0.049" />
+                            <body name="right_foot" pos="0 0 -.39" >
+                                <geom name="right_foot_cap1" type="capsule" fromto="-.07 -0.02 0 0.14 -0.04 0"  size="0.027" />
+                                <geom name="right_foot_cap2" type="capsule" fromto="-.07 0 0 0.14  0.02 0"  size="0.027" />
+                            </body>
+                        </body>
+                    </body>
+                    <!-- 左腿模型构建 -->
+                    <body name="left_thigh" pos="0 0.1 -0.04" >
+                        <geom name="left_thigh1" type="capsule" fromto="0 0 0 0 -0.01 -.34"  size="0.06" />
+                        <body name="left_shin" pos="0 -0.01 -0.403" >
+                            <geom name="left_shin1" type="capsule" fromto="0 0 0 0 0 -.3"   size="0.049" />
+                            <body name="left_foot" pos="0 0 -.39" >
+                                <geom name="left_foot_cap1" type="capsule" fromto="-.07 0.02 0 0.14 0.04 0"  size="0.027" />
+                                <geom name="left_foot_cap2" type="capsule" fromto="-.07 0 0 0.14  -0.02 0"  size="0.027" />
+                            </body>
+                        </body>
+                    </body>
+
+                </body>   <!--对应body3 -->
+            </body>       <!--对应body2 -->
+              <!-- 右臂模型构建 -->
+            <body name="right_upper_arm" pos="-0.00 -0.20 0" >
+              <!--
+                <joint name="right_shoulder1" type="hinge" pos="0 0 0" axis="1 0 0"  range="-85 60" stiffness="1" armature="0.0068" />
+                <joint name="right_shoulder2" type="hinge" pos="0 0 0" axis="0 -1 0" range="-85 60" stiffness="1"  armature="0.0051" />
+                <joint name="right_shoulder3" type="hinge" pos="0 0 0" axis="0 0 1" range="-85 60" stiffness="1"  armature="0.0051" /> -->
+
+                <joint name="right_shoulder" type="ball" pos="0 0 0" stiffness="1" armature="0.0068" />
+                <geom name="right_uarm1" type="capsule" fromto="0 0 0 0.20 0 0"  size="0.04 0.16" />
+
+                <body name="right_lower_arm" pos="0.2 0 0" >
+                    <joint name="right_elbow" type="hinge" pos="0 0 0" axis="0 -1 0" range="-90 50"  stiffness="0" armature="0.0028" />
+                    <geom name="right_larm" type="capsule" fromto="0.0 0.0 0.0 .25 .0 .0"  size="0.028" />
+                    <geom name="right_hand" type="sphere" pos=".25 .0 .0"  size="0.05"/>
+                    <site name="arm_tip_r" pos="0.25 0 0" size="0.05" />
+                </body>
+            </body>
+
+
+             <!-- 左臂模型构建 -->   
+             <body name="left_upper_arm" pos="0.00 0.20 0" >
+              <!--
+                <joint name="left_shoulder1" type="hinge" pos="0 0 0" axis="1 0 0" range="-180 180" stiffness="1" armature="0.0068" />
+                <joint name="left_shoulder2" type="hinge" pos="0 0 0" axis="0 -1 0" range="-180 180"  stiffness="1" armature="0.0051" />
+                <joint name="left_shoulder3" type="hinge" pos="0 0 0" axis="0 0 1" range="-85 60" stiffness="1"  armature="0.0051" />  -->
+                <joint name="left_shoulder" type="ball" pos="0 0 0" stiffness="1" armature="0.0068" />
+                <geom name="left_uarm1" type="capsule" fromto="0 0 0 0.20 0 0"  size="0.04 0.16" />
+                <body name="left_lower_arm"  pos="0.2 0 0" >
+                    <joint name="left_elbow" type="hinge" pos="0 0 0" axis="0 -1 0" range="-90 50" stiffness="0" armature="0.0028" />
+                    <geom name="left_larm" type="capsule" fromto="0.0 0.0 0.0 .25 .0 .0"  size="0.028" />
+                    <geom name="left_hand" type="sphere" pos=".25 .0 .0"  size="0.04"/>
+                    <site name="arm_tip_l" pos="0.25 0 0" size="0.05" />
+                </body>
+            </body>
+        </body>  <!--对应body1 -->
+      </body>    <!--对应body0 -->
+     </body>  <!-- 对应 limb_0 -->
+    </worldbody>
+    <sensor>
+                <framepos  objtype="site"  objname="arm_tip_r"/>
+                <framepos  objtype="site" objname="arm_tip_l" />
+                <framepos  objtype="site"  objname="robot_tip_r"/>
+                <framepos  objtype="site" objname="robot_tip_l" />            
+    </sensor>
+   <contact>
+	    <pair geom1="right_uarm1" geom2="l2_r" friction="1 1 0.9 0.0001 0.0001"/> 
+            <pair geom1="right_uarm1" geom2="l3_r" friction="1 1 0.9 0.0001 0.0001"/> 
+	    <pair geom1="right_larm" geom2="l2_r" friction="1 1 0.9 0.0001 0.0001"/>
+            <pair geom1="right_larm" geom2="l3_r" friction="1 1 0.9 0.0001 0.0001"/>
+    </contact>
+</mujoco>

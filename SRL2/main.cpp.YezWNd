@@ -1,0 +1,386 @@
+#include "globalDef.h"
+#include <iostream>
+//#include "kinematics.h"
+#include "motionplanning.h"
+#include "dynamics.h"
+#include "robot.h"
+//#define VREP_B0
+
+#ifdef VREP_B0
+#include "vrepsimb0.h"
+#else
+#include "vrepsim.h"
+#endif
+
+using namespace std;
+using namespace robot;
+
+void printVector(float vec[], int n)
+{
+    for(int i=0;i<n;i++)
+    {
+        printf("%0.2f",vec[i]);
+        if(i!=n-1)printf("\t");
+    }
+    printf("\n");
+}
+
+int main()
+{
+    float T_SIM = 0.05f;
+    bool ret;
+
+//    robotArm arm;
+//    const char filename[] = "./model/iiwa7.urdf";
+//    arm.init(filename);
+//    //arm.ik()
+
+    //start vrepsim
+
+#ifdef VREP_B0
+    vrepsimB0 vrep;
+#else
+    vrepsim vrep;
+#endif
+    Vector3d pos,pos0;
+    Matrix3d ori;
+    VectorNd qres;
+    dynamics dyna;
+    dyna.init();
+
+    VectorNd q       = VectorNd::Zero (DOFS);
+    VectorNd qd      = VectorNd::Zero (DOFS);
+    VectorNd qdd     = VectorNd::Zero (DOFS);
+    VectorNd tau     = VectorNd::Zero (DOFS);
+
+    VectorNd q_old       = VectorNd::Zero (DOFS);
+    VectorNd qd_old      = VectorNd::Zero (DOFS);
+
+    if(vrep.connect("192.168.10.1"))
+    {
+        //cout << "vrep connected!" << endl;
+        //cout << "vrep closed!" << endl;
+    }
+
+
+    //start kinematics
+    //kinematics kine;
+    float cp[DOFS],jpInit[DOFS];
+    float jp[] = { 0,-30.0f * PI / 180.0f,0.0f,-60.0f * PI / 180.0f,0.0f,-30.0f * PI / 180.0f,0.0f};
+    //simReal jp[] = { 0,-90.0f * PI / 180.0f,0.0f,-0.0f * PI / 180.0f,0.0f,-0.0f * PI / 180.0f,0.0f};
+    //char kinefile[] = "./ikmodel/lbr_iiwa_7_r800.ik";
+    //kine.loadFromFile(kinefile);
+    //extApi_sleepMs(1000);
+
+    //vrep.getJointPositions(cp);
+    //kine.getJointPositions(jpInit);
+    //kine.getJointPositions(cp);
+    printVector(cp,DOFS);
+    motionplanning motion;
+    motion.rmlPos(cp,jp,T_SIM,1,2);
+    float p[DOFS],v[DOFS],a[DOFS];
+    float tstep = T_SIM;
+
+    while(!motion.rmlStep(p,v,a))
+    {
+        //kine.setJointPositions(p);
+        //vrep.setJointPositions(p);
+        vrep.setJointTargetPositions(p);
+        //vrep.addGraphData(p[1]);
+        for(int i=0;i<DOFS;i++)   q[i] = p[i];
+        qd = (q - q_old)/tstep;
+        qdd = (qd - qd_old)/tstep;
+        q_old = q;
+        qd_old = qd;
+        dyna.inverseDynamics(q,qd,qdd,tau);
+        float graphdata[] = {tau[1]};
+        vrep.addGraphData(graphdata,1);
+        usleep(T_SIM*1000000);
+    }
+
+    dyna.setJointPositions(q);
+    dyna.getEndPose(pos,ori);
+    pos0 = pos;
+    dyna.inverseKinematics(pos,ori,qres);
+    cout<<qres.transpose()<<endl;
+
+//    C7Vector targetInitTransf;
+//    kine.getTargetTransform(&targetInitTransf);
+//    C7Vector targetTransf(targetInitTransf);
+
+    float w = 0.1f;
+    float t = 0.0,tend = 10.0f;
+    int stepCount = 0;
+
+    while(t<tend)
+    {
+        stepCount++;
+        t=stepCount*tstep;
+        // Slightly modify the position of the target dummy:
+//        targetTransf.X(0) = targetInitTransf.X(0) + 1.0f*simReal(sin(2 * PI * w * t) * 0.2);
+//        targetTransf.X(1) = targetInitTransf.X(1) + 0.0f*simReal(sin(4 * PI * w * t) * 0.1);
+//        targetTransf.X(2) = targetInitTransf.X(2) + 1.0f*simReal((cos(2 * PI * w * t) - 1) * 0.2);
+        pos[0] = pos0[0] + 0.0f*float(sin(2 * PI * w * t) * 0.2);
+        pos[1] = pos0[1] + 0.0f*float(sin(4 * PI * w * t) * 0.1);
+        pos[2] = pos0[2] + 1.0f*float((cos(2 * PI * w * t) - 1) * 0.2);
+
+//        kine.setTargetTransform(targetTransf);
+//        kine.getJointPositions(jp);
+
+        //dyna.setEndPose(pos0,ori);
+        dyna.inverseKinematics(pos,ori,qres);
+
+        //for(int i=0;i<DOFS;i++)   q[i] = jp[i];
+        q = qres;
+        qd = (q - q_old)/tstep;
+        qdd = (qd - qd_old)/tstep;
+        q_old = q;
+        qd_old = qd;
+        dyna.inverseDynamics(q,qd,qdd,tau);
+        cout << q.transpose() << endl;
+        //dyna.forwardDynamics(q,qd,tau,qdd);
+        //cout << qdd.transpose() << endl;
+        //vrep.setJointPositions(jp);
+        for(int i=0;i<DOFS;i++)   jp[i] = q[i];
+        vrep.setJointTargetPositions(jp);
+        float graphdata[] = {jp[1]};
+        vrep.addGraphData(graphdata,1);
+        usleep(tstep*1000000);
+    }
+
+    //kine.getJointPositions(cp);
+    motion.rmlPos(cp,jpInit,T_SIM,1,2);
+    while(!motion.rmlStep(p,v,a))
+    {
+        //kine.setJointPositions(p);
+        //vrep.setJointPositions(p);
+        vrep.setJointTargetPositions(p);
+        for(int i=0;i<DOFS;i++)   q[i] = p[i];
+        qd = (q - q_old)/tstep;
+        qdd = (qd - qd_old)/tstep;
+        q_old = q;
+        qd_old = qd;
+        dyna.inverseDynamics(q,qd,qdd,tau);
+        float graphdata[] = {tau[1]};
+        vrep.addGraphData(graphdata,1);
+        usleep(T_SIM*1000000);
+    }
+
+    //clear all
+    //extApi_sleepMs(2000);
+    motion.rmlRemove();
+    vrep.close();
+    cout << "the end!" << endl;
+    return 0;
+}
+
+/*
+//#include "time.h"
+//#include <stdio.h>
+//#include <stdlib.h>
+#define CYCLE_TIME_IN_SECONDS                   0.001f
+#define NUMBER_OF_DOFS							7
+#define RML_OF_DOFS								3
+#define PI										3.1416f
+#define SIM_T									0.01f
+#define INTERP_MODE			1   //0:linear,1:cubic,2:poly5,3:rml
+
+int main(int argc, char* argv[])
+{
+    // Read the exported kinematic file:
+    FILE* file;
+    const char* fname = "../lbr_iiwa_7_r800.ik";
+    file = fopen(fname, "rb");
+    if (file)
+    {
+        fseek(file, 0, SEEK_END);
+        unsigned long fl = ftell(file);
+        int dataLength = (int)fl;
+        fseek(file, 0, SEEK_SET);
+        std::vector<unsigned char> data;
+        data.resize(dataLength);
+        fread((char*)&data[0], dataLength, 1, file);
+        fclose(file);
+
+        // Initialize the environment and import the kinematic data:
+        ikCreateEnvironment();
+        ikLoad(&data[0], dataLength);
+
+        printf("ik calculation test for LBR_iiwa_7_R800, model file %s \n", fname);
+
+        // Get some handles from the robot model:
+        int motorHandles[NUMBER_OF_DOFS];
+        for (int i = 0; i < NUMBER_OF_DOFS; i++)
+        {
+            char name[16];
+            sprintf(name, "LBR_iiwa_7_R800_joint%d", i + 1);
+            bool ret = ikGetObjectHandle(name, &motorHandles[i]);
+            printf("joint%d handle=%d\n", i, motorHandles[i]);
+        }
+
+        int targetHandle;
+        ikGetObjectHandle("target", &targetHandle);
+        printf("targetHandle=%d\n", targetHandle);
+        int tipHandle;
+        ikGetObjectHandle("tip", &tipHandle);
+        printf("tipHandle=%d\n", tipHandle);
+        //int baseHandle;
+        //ikGetObjectHandle("LBR_iiwa_7_R800", &baseHandle);
+        //printf("baseHandle=%d\n", baseHandle);
+
+        simReal ps[] = { 0,-30.0f * PI / 180.0f,0.0f,-60.0f * PI / 180.0f,0.0f,-30.0f * PI / 180.0f,0.0f };
+        for (int i = 0; i < NUMBER_OF_DOFS; i++)
+        {
+            bool ret = ikSetJointPosition(motorHandles[i], ps[i]);
+        }
+        C7Vector tipTransf;
+        ikGetObjectTransformation(tipHandle, -1, &tipTransf);
+        ikSetObjectTransformation(targetHandle, -1, &tipTransf);
+
+        // Get the initial target dummy transformation, of the robot:
+        C7Vector initTargetTransf;
+        ikGetObjectTransformation(targetHandle, -1, &initTargetTransf);
+
+        Vrep_connect();
+
+        float pos[RML_OF_DOFS] = { initTargetTransf.X(0),initTargetTransf.X(1) ,initTargetTransf.X(2) };
+        float vel[RML_OF_DOFS] = { 0,0,0 };
+        float acc[RML_OF_DOFS] = { 0,0,0 };
+        float posLast[RML_OF_DOFS] = { pos[0],pos[1] ,pos[2]};
+        float velLast[RML_OF_DOFS] = { vel[0],vel[1] ,vel[2] };
+        float subpos[RML_OF_DOFS], subvel[RML_OF_DOFS], subacc[RML_OF_DOFS];
+        int nsteps = int(SIM_T / CYCLE_TIME_IN_SECONDS + 0.5f);
+
+        //
+        if (INTERP_MODE == 0) linearInit(nsteps, pos, vel);
+        else if(INTERP_MODE==1) cubicInit(nsteps, pos, vel);
+        else if (INTERP_MODE == 2) poly5Init(nsteps, pos, vel);
+        //else if (INTERP_MODE == 3) rmlPos(pos, vel, acc);
+
+        FILE* fdata = fopen("../simdata.txt", "w+");
+
+        simReal w = 1.0f;
+        simReal t = 0.0;
+        const float simTimeTotal = 5.0f;
+        const int TOTAL_LOOPS = int(simTimeTotal / SIM_T);
+        int loopCount = 0;
+        clock_t ti = clock();
+        //C7Vector targetTransfLast(initTargetTransf);
+
+        while (true)
+        {
+            loopCount++;
+            if (loopCount >= TOTAL_LOOPS)
+            {
+                clock_t td = clock() - ti;
+                printf("totoal %d ik calculations, time used:%0.3f, avarage time:%0.6f\n", loopCount, td / 1000.0f, td / (TOTAL_LOOPS * 1000.0f));
+                break;
+            }
+            // Slightly modify the position of the target dummy:
+            C7Vector targetTransf(initTargetTransf);
+            targetTransf.X(0) += 1.0f*simReal(sin(2 * PI * w * t) * 0.2);
+            targetTransf.X(1) += 0.0f*simReal(sin(4 * PI * w * t) * 0.1);
+            targetTransf.X(2) += simReal((cos(2 * PI * w * t) - 1) * 0.2);
+
+            for (int i = 0; i < RML_OF_DOFS; i++)
+            {
+                pos[i] = targetTransf.X(i);
+                vel[i] = (pos[i] - posLast[i]) / SIM_T;
+                acc[i] = (vel[i] - velLast[i]) / SIM_T;
+                posLast[i] = pos[i];
+                velLast[i] = vel[i];
+            }
+
+            //targetTransfLast = targetTransf;
+
+            //
+            if (INTERP_MODE == 0) linearBegin(pos,vel);
+            else if (INTERP_MODE == 1) cubicBegin(pos, vel);
+            else if(INTERP_MODE == 2) poly5Begin(pos, vel, acc);
+            //else if (INTERP_MODE == 3) rmlSetTarget(pos, vel, acc);
+
+            printf("nsteps=%d\n", nsteps);
+            for (int i = 0; i < nsteps; i++)
+            {
+                //float Trand = float(0.001f*(rand() % 1));
+                t += CYCLE_TIME_IN_SECONDS;
+                //rmlStep(subpos,subvel);
+
+                int idx = 0;
+                if (INTERP_MODE == 0) linearStep(subpos, subvel, subacc);
+                else if (INTERP_MODE == 1) idx = cubicStep(subpos, subvel, subacc);
+                else if (INTERP_MODE == 2) idx = poly5Step(subpos, subvel, subacc);
+                //else if (INTERP_MODE == 3) rmlStep(subpos, subvel, subacc);
+
+                C7Vector targetPos(targetTransf);
+                targetPos.X(0) = subpos[0];
+                targetPos.X(1) = subpos[1];
+                targetPos.X(2) = subpos[2];
+                ikSetObjectTransformation(targetHandle, -1, &targetPos);
+
+                // calculate IK:
+                bool ret = ikHandleIkGroup(ik_handle_all);
+                if (ret)
+                {
+                    // Read the corresponding robot joint angles and do something with them:
+                    fprintf(fdata, "%0.3f\t", t);
+
+                    for (int i = 0; i < RML_OF_DOFS; i++)
+                    {
+                        fprintf(fdata, "%0.6f\t", pos[i]);
+                        fprintf(fdata, "%0.6f\t", subpos[i]);
+                    }
+
+                    for (int i = 0; i < RML_OF_DOFS; i++)
+                    {
+                        fprintf(fdata, "%0.6f\t", vel[i]);
+                        fprintf(fdata, "%0.6f\t", subvel[i]);
+                    }
+
+                    for (int i = 0; i < RML_OF_DOFS; i++)
+                    {
+                        fprintf(fdata, "%0.6f\t", acc[i]);
+                        fprintf(fdata, "%0.6f\t", subacc[i]);
+                    }
+
+                    simReal config[NUMBER_OF_DOFS];
+                    for (int i = 0; i < NUMBER_OF_DOFS; i++)
+                    {
+                        bool ret = ikGetJointPosition(motorHandles[i], &config[i]);
+                        if (!ret)
+                        {
+                            printf("error:%s\n", ikGetLastError().c_str());
+                        }
+                        else
+                        {
+
+                            fprintf(fdata, "%0.6f\t", config[i] * 180.0f / PI);
+                            //printf("joint[%d]=%0.3f\t", i, config[i]);
+                        }
+                    }
+
+                    Vrep_setJointPositions(config);
+                    fprintf(fdata, "\n");
+                    //printf("\n");
+
+                }
+                else
+                {
+                    printf("ikHandleIkGroup error:%s\n", ikGetLastError().c_str());
+                }
+            }
+
+
+
+
+        }
+        ikEraseEnvironment();
+        Vrep_close();
+        //if (INTERP_MODE == 2) rmlRemove();
+        fclose(fdata);
+        printf("the end!");
+    }
+    return(0);
+}
+
+*/

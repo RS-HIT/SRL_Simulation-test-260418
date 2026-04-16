@@ -1,0 +1,339 @@
+#include "globalDef.h"
+#include <iostream>
+//#include "kinematics.h"
+#include "motionplanning.h"
+#include "dynamics.h"
+//#include "robot.h"
+//#define VREP_B0
+#include <unistd.h>
+
+#ifdef VREP_B0
+#include "vrepsimb0.h"
+vrepsimB0 vrep;
+#else
+#include "vrepsim.h"
+vrepsim vrep;
+#endif
+
+#include </usr/xenomai/include/trank/native/task.h>
+#include </usr/xenomai/include/trank/native/timer.h>
+#include </usr/xenomai/include/trank/rtdk.h>
+#include </usr/xenomai/include/trank/native/sem.h>
+#include </usr/xenomai/include/trank/native/mutex.h>
+#include <rtdm/testing.h>
+#include <boilerplate/trace.h>
+#include <xenomai/init.h>
+#include <sys/socket.h>
+#include <sys/mman.h>
+#include <rtdm/ipc.h>
+#include <malloc.h>
+#define TASK_PERIOD 1000000 /* 1 ms period */
+RT_TASK task_vrep;
+using namespace std;
+using namespace RigidBodyDynamics::Math;
+//using namespace robot;
+
+const float T_SIM = 0.001f;
+const float T_VREP = 0.01f;
+//int n_VrepRefresh = int(T_VREP/T_SIM);
+const int graph_curves = 2;
+const int graph_points = 50;
+float graphbuf[graph_curves*graph_points];
+dynamics        dyna;
+motionplanning  motion;
+int             dofs = 0;
+//void printVector(float vec[], int n)
+//{
+//    for(int i=0;i<n;i++)
+//    {
+//        rt_printf("%0.2f",vec[i]);
+//        if(i!=n-1)rt_printf("\t");
+//    }
+//    rt_printf("\n");
+//}
+
+
+
+void VrepRefresh(VectorXd p)
+{
+    static float tdata = 0;
+    tdata = tdata + T_SIM;
+    if(tdata >= T_VREP )
+    {
+        tdata = 0;
+        vrep.setJointPositions(p);
+    }
+}
+
+void VrepGraphAddData(float curvedata[graph_curves])
+{
+    static int pcount = 0;
+    pcount++;
+    for(int i=0;i<graph_curves;i++)
+    {
+        graphbuf[(pcount-1)*graph_curves+i] = curvedata[i];
+    }
+    if(pcount==graph_points)
+    {
+        pcount = 0;
+        vrep.addGraphData(graphbuf,graph_points*graph_curves);
+    }
+}
+
+void CalcDynamics(VectorXd q,VectorXd& tau)
+{
+    VectorNd qd      = VectorNd::Zero (dofs);
+    VectorNd qdd     = VectorNd::Zero (dofs);
+    static VectorNd q_old       = VectorNd::Zero (dofs);
+    static VectorNd qd_old      = VectorNd::Zero (dofs);
+    qd = (q - q_old)/T_SIM;
+    qdd = (qd - qd_old)/T_SIM;
+    q_old = q;
+    qd_old = qd;
+    dyna.inverseDynamics(q,qd,qdd,tau);
+}
+
+void connectVrep()
+{
+    char input;
+    char ip[32];
+    cout<< "连接本地VREP(l)，远程(r),请输入:";
+    cin>>input;
+    if(input=='R' || input=='r')
+    {
+        //sprintf(ip,"192.168.10.1");
+        sprintf(ip,"192.168.13.5");
+    }
+    else
+    {
+        sprintf(ip,"127.0.0.1");
+    }
+    //cout << ip << endl;
+    if(vrep.connect(ip))
+    {
+        rt_printf("vrep server(%s) connected!\n",ip);
+        //cout << "vrep closed!" << endl;
+    }
+    vrep.setGraphParam(graph_curves,graph_points);
+}
+void Vrep_Qt(void *cookie)
+{
+    dyna.init();
+    dofs = dyna.getDofs();
+    motion.init(dofs,T_SIM);
+    float curvedata[graph_curves];
+
+    //step2 start vrepsim
+    connectVrep();
+
+    int demoLoopCounts = 0;
+    //step3 demo mainloop
+    int stepToDo[5] = {1,1,1,1,1};
+    while(true)
+    {
+//        char input;
+//        cout<<"演示(d)，退出(q)，请输入:";
+//        cin>>input;
+//        if(input=='Q' || input=='q')
+//        {
+//            break;
+//        }
+        demoLoopCounts = demoLoopCounts + 1;
+        rt_printf("demoLoopCounts:%d\n",demoLoopCounts);
+        Math::Vector3d pos,pos0,rpy;
+        Math::Matrix3d ori;
+
+        VectorXd qres(dofs),tau(dofs);
+        VectorXd jpInit(dofs);
+
+        unsigned long ov;
+        rt_task_set_periodic(NULL, TM_NOW, TASK_PERIOD);
+        char hint[64];
+        if(stepToDo[0] == 1)
+        {
+            //demo step1
+            sprintf(hint,"joint movements - to work position");
+            rt_printf("demo step1: %s started\n",hint);
+            float jp[] = {0,45.0f * PI / 180.0f,0.0f,90.0f * PI / 180.0f,0.0f,-45.0f * PI / 180.0f,0.0f};  //work position
+            VectorXd cp(dofs);
+            VectorXd p(dofs),v(dofs),a(dofs);
+            dyna.getJointPositions(jpInit);
+            for(int i=0;i<dofs;i++)   cp[i] = jp[i];
+            motion.rmlPos(jpInit,cp,1,2);
+
+            while(!motion.rmlStep(p,v,a))
+            {
+                CalcDynamics(p,tau);
+                VrepRefresh(p);
+                curvedata[0] = tau[1];
+                curvedata[1] = tau[3];
+                VrepGraphAddData(curvedata);
+                //usleep(T_SIM*1000000);
+                rt_task_wait_period(&ov);
+            }
+            dyna.setJointPositions(p);
+            rt_printf("demo step1 finished\n");
+        }
+
+        if(stepToDo[1] == 1)
+        {
+            //demo step2
+            sprintf(hint,"end movements - translation");
+            rt_printf("demo step2: %s started\n",hint);
+            dyna.getEndPose(pos,ori);
+            vector<Math::Vector3d> pathpoints;
+            VectorXd p1(3),v1(3),a1(3);
+            pathpoints.push_back({pos[0],pos[1],pos[2]});
+            pathpoints.push_back({pos[0],pos[1],pos[2]-0.2f});
+            pathpoints.push_back({pos[0],pos[1],pos[2]});
+            pathpoints.push_back({pos[0]+0.2,pos[1],pos[2]});
+            pathpoints.push_back({pos[0],pos[1],pos[2]});
+            pathpoints.push_back({pos[0],pos[1]+0.2,pos[2]});
+            pathpoints.push_back({pos[0],pos[1],pos[2]});
+
+            motion.init(3,T_SIM);
+            int n = pathpoints.size();
+            for(int i=1;i<n;i++)
+            {
+                motion.rmlPos(pathpoints[i-1],pathpoints[i],1,2);
+
+                //unsigned long os;
+                //rt_task_set_periodic(NULL, TM_NOW, TASK_PERIOD);
+                while(!motion.rmlStep(p1,v1,a1))
+                {
+                    dyna.inverseKinematics(p1,ori,qres);
+                    CalcDynamics(qres,tau);
+                    VrepRefresh(qres);
+                    curvedata[0] = tau[1];
+                    curvedata[1] = tau[3];
+                    VrepGraphAddData(curvedata);
+                    //usleep(T_SIM*1000000);
+                    rt_task_wait_period(&ov);
+                }
+                dyna.setJointPositions(qres);
+            }
+            rt_printf("demo step2 finished\n");
+        }
+
+        if(stepToDo[2] == 1)
+        {
+            //demo step3:
+            sprintf(hint,"end movements - rotation");
+            rt_printf("demo step3: %s started\n",hint);
+            vector<Math::Vector3d> pathpoints;
+            VectorXd p1(3),v1(3),a1(3);
+            dyna.getEndPose(pos,ori);
+            pathpoints.clear();
+            pathpoints.push_back({0,0,0});
+            pathpoints.push_back({60*M_PI/180.0f,0,0});
+            pathpoints.push_back({0,0,0});
+            pathpoints.push_back({0,45*M_PI/180.0f,0});
+            pathpoints.push_back({0,0,0});
+            pathpoints.push_back({0,0,60*M_PI/180.0f});
+            pathpoints.push_back({0,0,0});
+
+            motion.init(3,T_SIM);
+            int n = pathpoints.size();
+            for(int i=1;i<n;i++)
+            {
+                motion.rmlPos(pathpoints[i-1],pathpoints[i],1,2);
+                Math::Matrix3d mat;
+
+                //unsigned long ox;
+                //rt_task_set_periodic(NULL, TM_NOW, TASK_PERIOD);
+                while(!motion.rmlStep(p1,v1,a1))
+                {
+                    mat = dyna.rpyToMatrix(p1)*ori;
+                    dyna.inverseKinematics(pos,mat,qres);
+                    CalcDynamics(qres,tau);
+                    VrepRefresh(qres);
+                    curvedata[0] = tau[1];
+                    curvedata[1] = tau[3];
+                    VrepGraphAddData(curvedata);
+                    //usleep(T_SIM*1000000);
+                    rt_task_wait_period(&ov);
+                }
+                dyna.setJointPositions(qres);
+            }
+            rt_printf("demo step3 finished\n");
+        }
+
+        if(stepToDo[3] == 1)
+        {
+            //demo step4:
+            sprintf(hint,"end movements - path following");
+            rt_printf("demo step4: %s started\n",hint);
+            dyna.getEndPose(pos,ori);
+            pos0 = pos;
+
+            double w = 0.5f;
+            double t = 0.0f,tend = 4.0f;
+            //int stepCount = 0;
+
+            //unsigned long oy;
+            //rt_task_set_periodic(NULL, TM_NOW, TASK_PERIOD);
+            while(t<tend)
+            {
+                //stepCount++;
+                t=t+T_SIM;
+                pos[0] = pos0[0] + 0.5f*(sin(2 * PI * w * t) * 0.2f);
+                pos[1] = pos0[1] + 0.0f*(sin(4 * PI * w * t) * 0.1f);
+                pos[2] = pos0[2] + 0.5f*((cos(2 * PI * w * t) - 1) * 0.2f);
+
+                dyna.inverseKinematics(pos,ori,qres);
+                CalcDynamics(qres,tau);
+                VrepRefresh(qres);
+                curvedata[0] = tau[1];
+                curvedata[1] = tau[3];
+                VrepGraphAddData(curvedata);
+                //usleep(T_SIM*1000000);
+                rt_task_wait_period(&ov);
+            }
+            dyna.setJointPositions(qres);
+            rt_printf("demo step4 finished\n");
+        }
+
+        if(stepToDo[4] == 1)
+        {
+            //demo step5:
+            sprintf(hint,"joint movements - to init position");
+            rt_printf("demo step5: %s started\n",hint);
+            VectorXd cp(dofs);
+            VectorXd p(dofs),v(dofs),a(dofs);
+            dyna.getJointPositions(cp);
+            motion.init(dofs,T_SIM);
+            motion.rmlPos(cp,jpInit,1,2);
+
+            //unsigned long oz;
+            //rt_task_set_periodic(NULL, TM_NOW, TASK_PERIOD);
+            while(!motion.rmlStep(p,v,a))
+            {
+                VrepRefresh(p);
+                CalcDynamics(p,tau);
+                curvedata[0] = tau[1];
+                curvedata[1] = tau[3];
+                VrepGraphAddData(curvedata);
+                //usleep(T_SIM*1000000);
+                rt_task_wait_period(&ov);
+            }
+            dyna.setJointPositions(p);
+            rt_printf("demo step5 finished\n");
+        }
+    }
+
+    motion.rmlRemove();
+    vrep.close();
+    cout << "the end!" << endl;
+    //return 0;
+}
+int main()
+{
+    rt_task_create(&task_vrep, "send", 0, 90, 0);
+    rt_task_start(&task_vrep, Vrep_Qt, NULL);
+    pause();
+    //step1 init dynamics,motion planing
+    rt_printf("End program\n");
+    return (0);
+
+}
+
