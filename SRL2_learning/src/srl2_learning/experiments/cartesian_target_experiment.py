@@ -218,10 +218,13 @@ def run_single_target_experiment(
     experiment_case_id: str = "target_1",
 ) -> CartesianExperimentResult:
     active_tool_frame = _resolve_tool_frame(tool_frame, use_tool_frame)
+    clamped_initial_joint_positions = _as_float_list(
+        model_context.clamp_joint_positions(np.asarray(initial_joint_positions, dtype=float))
+    )
     ik_result = solve_inverse_kinematics(
         model_context=model_context,
         target_xyz=target_position,
-        initial_joint_positions=initial_joint_positions,
+        initial_joint_positions=clamped_initial_joint_positions,
         tool_frame=active_tool_frame,
         max_iterations=ik_max_iterations,
         tolerance=ik_tolerance,
@@ -229,7 +232,7 @@ def run_single_target_experiment(
         damping=ik_damping,
     )
     joint_trajectory = _build_joint_motion_segment(
-        start_joint_positions=initial_joint_positions,
+        start_joint_positions=clamped_initial_joint_positions,
         target_joint_positions=ik_result.joint_positions,
         control_period=control_period,
         max_velocity=max_velocity,
@@ -272,7 +275,9 @@ def run_multi_target_experiment(
     use_tool_frame: bool = False,
 ) -> CartesianExperimentResult:
     active_tool_frame = _resolve_tool_frame(tool_frame, use_tool_frame)
-    current_joint_positions = _as_float_list(initial_joint_positions)
+    current_joint_positions = _as_float_list(
+        model_context.clamp_joint_positions(np.asarray(initial_joint_positions, dtype=float))
+    )
     all_samples: list[CartesianTrackingSample] = []
     all_summaries: list[CartesianTargetSummary] = []
     all_ik_results: list[IKSolveResult] = []

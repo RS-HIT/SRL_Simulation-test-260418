@@ -4,12 +4,13 @@
 - world frame 原点
 - base frame 常量
 - flange frame 参考对象
-- tool frame 配置来源
+- joint limit 约束
 """
 
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,6 +19,30 @@ import numpy as np
 
 from ..adapters.urdf_real_mesh_mujoco import URDFRealMeshPreparationAdapter, load_real_mesh_mujoco_model
 from .tool_frame import euler_rpy_to_rotation_matrix
+
+
+def _build_joint_limit_overrides(
+    joint_limit_overrides_radians: dict[str, list[float]] | None = None,
+    joint_limit_overrides_degrees: dict[str, list[float]] | None = None,
+) -> dict[str, tuple[float, float]]:
+    """统一整理关节限位覆盖表。
+
+    优先级：
+    1. 弧度配置
+    2. 角度配置
+    """
+    resolved: dict[str, tuple[float, float]] = {}
+    if joint_limit_overrides_degrees:
+        for joint_name, limits in joint_limit_overrides_degrees.items():
+            if len(limits) != 2:
+                raise ValueError(f"关节 {joint_name} 的角度限位必须是 [min_deg, max_deg]")
+            resolved[str(joint_name)] = (math.radians(float(limits[0])), math.radians(float(limits[1])))
+    if joint_limit_overrides_radians:
+        for joint_name, limits in joint_limit_overrides_radians.items():
+            if len(limits) != 2:
+                raise ValueError(f"关节 {joint_name} 的弧度限位必须是 [min_rad, max_rad]")
+            resolved[str(joint_name)] = (float(limits[0]), float(limits[1]))
+    return resolved
 
 
 @dataclass(slots=True)
@@ -49,7 +74,7 @@ class MujocoKinematicModelContext:
         mujoco.mj_forward(self.model, self.data)
 
     def clamp_joint_positions(self, joint_positions: np.ndarray) -> np.ndarray:
-        """按模型限位裁剪关节角。"""
+        """按当前生效的关节限位裁剪关节角。"""
         return np.clip(joint_positions, self.joint_lower_limits, self.joint_upper_limits)
 
     def has_body(self, body_name: str) -> bool:
@@ -61,6 +86,10 @@ class MujocoKinematicModelContext:
     def describe_reference(self) -> dict[str, object]:
         reference_kind = "site" if self.reference_site_name and self.has_site(self.reference_site_name) else "body"
         reference_name = self.reference_site_name if reference_kind == "site" else self.reference_body_name
+        joint_limits = {
+            joint_name: [float(self.joint_lower_limits[index]), float(self.joint_upper_limits[index])]
+            for index, joint_name in enumerate(self.joint_names)
+        }
         return {
             "reference_kind": reference_kind,
             "reference_name": reference_name,
@@ -70,6 +99,7 @@ class MujocoKinematicModelContext:
             "world_frame_origin": self.world_frame_origin,
             "base_position": self.base_position,
             "base_euler": self.base_euler,
+            "joint_limits_radians": joint_limits,
         }
 
 
@@ -77,6 +107,8 @@ def load_real_mesh_model_context(
     real_mesh_config_path: str | Path,
     reference_body_name: str = "Link3",
     reference_site_name: str | None = None,
+    joint_limit_overrides_radians: dict[str, list[float]] | None = None,
+    joint_limit_overrides_degrees: dict[str, list[float]] | None = None,
 ) -> MujocoKinematicModelContext:
     """从真实网格配置加载默认运动学实验模型。"""
     config_path = Path(real_mesh_config_path).resolve()
@@ -113,14 +145,29 @@ def load_real_mesh_model_context(
     joint_lower_limits: list[float] = []
     joint_upper_limits: list[float] = []
 
+    resolved_overrides = _build_joint_limit_overrides(
+        joint_limit_overrides_radians=joint_limit_overrides_radians,
+        joint_limit_overrides_degrees=joint_limit_overrides_degrees,
+    )
+
     for joint_id in range(model.njnt):
         joint_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, joint_id)
         if joint_name is None:
             continue
         joint_names.append(joint_name)
         joint_qpos_indices.append(int(model.jnt_qposadr[joint_id]))
-        joint_lower_limits.append(float(model.jnt_range[joint_id][0]))
-        joint_upper_limits.append(float(model.jnt_range[joint_id][1]))
+
+        lower_limit = float(model.jnt_range[joint_id][0])
+        upper_limit = float(model.jnt_range[joint_id][1])
+        if joint_name in resolved_overrides:
+            lower_limit, upper_limit = resolved_overrides[joint_name]
+        if lower_limit > upper_limit:
+            raise ValueError(f"关节 {joint_name} 的限位下界不能大于上界。")
+        joint_lower_limits.append(lower_limit)
+        joint_upper_limits.append(upper_limit)
+
+    for unknown_joint_name in sorted(set(resolved_overrides) - set(joint_names)):
+        raise ValueError(f"关节限位配置里出现了模型中不存在的关节: {unknown_joint_name}")
 
     for body_id in range(model.nbody):
         body_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id)

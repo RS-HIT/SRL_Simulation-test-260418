@@ -86,6 +86,34 @@ class CartesianKinematicsTests(unittest.TestCase):
         self.assertGreater(result.summaries[0].final_tool_error_norm, 0.1)
         self.assertEqual(len(result.joint_trajectory[-1]), 3)
 
+    def test_joint_limit_overrides_are_applied_and_clamped(self) -> None:
+        limited_context = load_real_mesh_model_context(
+            self.real_mesh_config_path,
+            joint_limit_overrides_degrees={
+                "J1": [-20.0, 20.0],
+                "J2": [-30.0, -10.0],
+                "J3": [-15.0, 15.0],
+            },
+        )
+        self.assertTrue(np.allclose(limited_context.joint_lower_limits, np.radians([-20.0, -30.0, -15.0]), atol=1e-9))
+        self.assertTrue(np.allclose(limited_context.joint_upper_limits, np.radians([20.0, -10.0, 15.0]), atol=1e-9))
+        clamped = limited_context.clamp_joint_positions(np.array([2.0, 0.0, -2.0], dtype=float))
+        expected = np.array(
+            [
+                limited_context.joint_upper_limits[0],
+                limited_context.joint_upper_limits[1],
+                limited_context.joint_lower_limits[2],
+            ],
+            dtype=float,
+        )
+        self.assertTrue(np.allclose(clamped, expected, atol=1e-9))
+        self.assertLessEqual(clamped[0], limited_context.joint_upper_limits[0] + 1e-9)
+        self.assertGreaterEqual(clamped[0], limited_context.joint_lower_limits[0] - 1e-9)
+        self.assertLessEqual(clamped[1], limited_context.joint_upper_limits[1] + 1e-9)
+        self.assertGreaterEqual(clamped[1], limited_context.joint_lower_limits[1] - 1e-9)
+        self.assertLessEqual(clamped[2], limited_context.joint_upper_limits[2] + 1e-9)
+        self.assertGreaterEqual(clamped[2], limited_context.joint_lower_limits[2] - 1e-9)
+
     def test_tool_frame_config_loads_from_json(self) -> None:
         tool_config_path = PROJECT_ROOT / "configs" / "tool_frame_config.json"
         tool_config = load_tool_frame_config(tool_config_path)
@@ -167,6 +195,10 @@ class CartesianKinematicsTests(unittest.TestCase):
         self.assertIn("target_1", labels)
         self.assertIn("target_2", labels)
 
+    def test_runtime_scene_has_explicit_arena_memory_budget(self) -> None:
+        scene_text = self.model_context.scene_model_path.read_text(encoding="utf-8")
+        self.assertIn('memory="64M"', scene_text)
+
     def test_inspector_script_runs(self) -> None:
         result = subprocess.run(
             [sys.executable, str(PROJECT_ROOT / "scripts" / "inspect_end_effector_frames.py")],
@@ -179,6 +211,7 @@ class CartesianKinematicsTests(unittest.TestCase):
         self.assertIn("base frame 原点", result.stdout)
         self.assertIn("tool frame 原点", result.stdout)
         self.assertIn("误差比较点", result.stdout)
+        self.assertIn("当前生效的关节限位", result.stdout)
 
 
 if __name__ == "__main__":

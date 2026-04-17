@@ -30,7 +30,7 @@ from srl2_learning.kinematics.tool_frame import ToolFrameConfig, load_tool_frame
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="运行四坐标系版本的末端实验。默认打开 viewer，并显示 world/base/flange/tool 四组坐标系。"
+        description="运行四坐标系版本的末端实验。默认打开 viewer，并显示 world/base/flange/tool。"
     )
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "configs" / "cartesian_target_experiment.json", help="实验配置文件路径。")
     parser.add_argument("--target-x", type=float, help="覆盖目标点 x 坐标。")
@@ -92,11 +92,18 @@ def _build_frame_visualization_config(config: dict) -> FrameVisualizationConfig:
     )
 
 
-def _print_coordinate_header(model_context, tool_frame: ToolFrameConfig | None, use_tool_frame: bool, target_position: list[float], real_mesh_config_path: Path, tool_config_path: Path) -> None:
+def _print_coordinate_header(
+    model_context,
+    tool_frame: ToolFrameConfig | None,
+    use_tool_frame: bool,
+    target_position: list[float],
+    real_mesh_config_path: Path,
+    tool_config_path: Path,
+) -> None:
     reference_info = model_context.describe_reference()
     print("当前四坐标系定义：")
     print(f"- world frame 原点: {reference_info['world_frame_origin']}")
-    print(f"- base frame 来源: runtime_urdf.world_to_base")
+    print("- base frame 来源: runtime_urdf.world_to_base")
     print(f"- base frame 平移常量在: {real_mesh_config_path}")
     print(f"- base_position: {reference_info['base_position']}")
     print(f"- base_euler: {reference_info['base_euler']}")
@@ -107,6 +114,9 @@ def _print_coordinate_header(model_context, tool_frame: ToolFrameConfig | None, 
         print(f"- tool_label: {tool_frame.label}")
         print(f"- tool_translation_xyz: {tool_frame.tool_translation_xyz}")
         print(f"- tool_rotation_rpy: {tool_frame.tool_rotation_rpy}")
+    print("- 当前生效的关节限位（弧度）:")
+    for joint_name, limits in reference_info["joint_limits_radians"].items():
+        print(f"  - {joint_name}: [{limits[0]}, {limits[1]}]")
     print(f"- target_position_world: {target_position}")
     print("- 当前真正参与误差比较的是 tool frame 原点。")
 
@@ -162,6 +172,8 @@ def main() -> None:
         real_mesh_config_path=real_mesh_config_path,
         reference_body_name=config.get("flange_reference_body", config["reference_body_name"]),
         reference_site_name=config.get("flange_reference_site", config["reference_site_name"]),
+        joint_limit_overrides_radians=config.get("joint_position_limits_radians"),
+        joint_limit_overrides_degrees=config.get("joint_position_limits_degrees"),
     )
     frame_visualization_config = _build_frame_visualization_config(config)
 

@@ -193,6 +193,46 @@ python SRL2_learning/scripts/inspect_end_effector_frames.py
 - `target_position`
 - 或 `target_points`
 
+#### 改每个关节的允许角度范围
+
+文件：
+
+- [cartesian_target_experiment.json](/e:/project/codetest/SRL2_learning/configs/cartesian_target_experiment.json)
+
+推荐改这个字段：
+
+```json
+"joint_position_limits_degrees": {
+  "J1": [-170.0, 170.0],
+  "J2": [-170.0, 10.0],
+  "J3": [-170.0, 170.0]
+}
+```
+
+这里每个关节都可以单独给上下限。
+
+如果你更习惯用弧度，也可以改：
+
+```json
+"joint_position_limits_radians": {
+  "J1": [-2.967, 2.967]
+}
+```
+
+更详细的说明见：
+
+- [17_关节角度限制说明.md](/e:/project/codetest/SRL2_learning/docs/17_关节角度限制说明.md)
+
+如果你想先人工拖动每个关节，再决定限位范围，直接运行：
+
+```powershell
+python SRL2_learning/scripts/debug_joint_angle_tuner.py
+```
+
+说明文档：
+
+- [18_关节角拖动调试器说明.md](/e:/project/codetest/SRL2_learning/docs/18_关节角拖动调试器说明.md)
+
 如果你希望在 viewer 里直接看到目标点位置，当前也在同一个配置里控制：
 
 - `show_target_point`

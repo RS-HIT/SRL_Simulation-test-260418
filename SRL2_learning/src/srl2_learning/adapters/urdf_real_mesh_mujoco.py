@@ -50,6 +50,7 @@ DEFAULT_REAL_MESH_FACE_LIMITS = {
 # 当前默认把 yaw 设成 -pi/2 左右，是为了让机械臂在默认 viewer 视角下更容易看到主体动作。
 DEFAULT_REAL_MESH_BASE_POSITION = [0.0, 0.0, 0.65]
 DEFAULT_REAL_MESH_BASE_EULER = [0.0, 0.0, -1.5708]
+DEFAULT_REAL_MESH_ARENA_MEMORY = "64M"
 
 
 @dataclass(slots=True)
@@ -433,6 +434,14 @@ class URDFRealMeshPreparationAdapter:
         黑背景的根因基本就在这里。
         """
         root = ET.parse(mjcf_path).getroot()
+        size = root.find("size")
+        if size is None:
+            size = ET.SubElement(root, "size")
+        # 真实网格、地板和接触一起出现时，MuJoCo 很容易在首帧就生成大量约束。
+        # arena memory 太小时，viewer 会报 “Insufficient arena memory ...”
+        # 并可能让调试类脚本在窗口刚弹出后就异常退出。
+        size.set("memory", DEFAULT_REAL_MESH_ARENA_MEMORY)
+
         asset = root.find("asset")
         if asset is None:
             asset = ET.SubElement(root, "asset")
@@ -593,6 +602,8 @@ class URDFRealMeshPreparationAdapter:
             runtime_mjcf_path = self.runtime_directory / f"{self.source_urdf_path.stem}_runtime_scene.xml"
             if not runtime_mjcf_path.exists():
                 runtime_mjcf_path = self._build_runtime_mjcf(runtime_urdf_path)
+            else:
+                self._inject_default_like_scene_into_mjcf(runtime_mjcf_path)
             mesh_infos = [
                 RealMeshProcessInfo(
                     mesh_name=item["mesh_name"],

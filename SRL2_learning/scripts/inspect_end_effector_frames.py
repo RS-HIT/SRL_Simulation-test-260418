@@ -1,4 +1,4 @@
-"""检查当前四坐标系定义和偏移常量。"""
+"""检查当前四坐标系定义、工具偏移和关节限位。"""
 
 from __future__ import annotations
 
@@ -27,6 +27,8 @@ def main() -> None:
         real_mesh_config_path=real_mesh_config_path,
         reference_body_name=experiment_config.get("flange_reference_body", experiment_config["reference_body_name"]),
         reference_site_name=experiment_config.get("flange_reference_site", experiment_config["reference_site_name"]),
+        joint_limit_overrides_radians=experiment_config.get("joint_position_limits_radians"),
+        joint_limit_overrides_degrees=experiment_config.get("joint_position_limits_degrees"),
     )
     fk_result = compute_forward_kinematics(
         context=model_context,
@@ -39,6 +41,7 @@ def main() -> None:
     print("你现在最该改的常量位置：")
     print(f"- 基座偏移改这里: {real_mesh_config_path}")
     print(f"- 工具偏移改这里: {tool_frame_config_path}")
+    print(f"- 关节角度限制改这里: {experiment_config_path}")
     print()
     print("joint 名称:")
     for name in model_context.joint_names:
@@ -49,6 +52,15 @@ def main() -> None:
     print("site 名称:")
     for name in model_context.site_names:
         print(f"  - {name}")
+    print()
+    print("当前生效的关节限位（弧度）:")
+    for joint_name, lower_limit, upper_limit in zip(
+        model_context.joint_names,
+        model_context.joint_lower_limits,
+        model_context.joint_upper_limits,
+        strict=True,
+    ):
+        print(f"  - {joint_name}: [{float(lower_limit)}, {float(upper_limit)}]")
     print()
     print("四个坐标系当前定义：")
     print(f"- world frame 原点: {fk_result.world_origin}")
@@ -65,6 +77,8 @@ def main() -> None:
     print(f"- tool_frame_enabled: {tool_frame.enabled and experiment_config['use_tool_frame']}")
     print(f"- tool_translation_xyz: {tool_frame.tool_translation_xyz}")
     print(f"- tool_rotation_rpy: {tool_frame.tool_rotation_rpy}")
+    print(f"- joint_position_limits_radians: {experiment_config.get('joint_position_limits_radians')}")
+    print(f"- joint_position_limits_degrees: {experiment_config.get('joint_position_limits_degrees')}")
     print()
     print("误差比较点说明：")
     print("- 当前真正参与误差比较的是 tool frame 原点。")

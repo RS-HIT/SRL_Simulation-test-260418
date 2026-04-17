@@ -27,4 +27,4 @@
       </body>
     </body>
   </worldbody>
-<visual><headlight ambient="0.45 0.45 0.45" diffuse="0.85 0.85 0.85" specular="0.25 0.25 0.25" /><rgba haze="0.92 0.95 1.0 1" /><global offwidth="1280" offheight="960" azimuth="120" elevation="-18" /></visual></mujoco>
+<visual><headlight ambient="0.45 0.45 0.45" diffuse="0.85 0.85 0.85" specular="0.25 0.25 0.25" /><rgba haze="0.92 0.95 1.0 1" /><global offwidth="1280" offheight="960" azimuth="120" elevation="-18" /></visual><size memory="64M" /></mujoco>
