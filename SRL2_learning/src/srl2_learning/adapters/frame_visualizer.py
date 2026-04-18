@@ -49,6 +49,37 @@ class FrameVisualizationConfig:
     print_frame_pose_every_n_steps: int = 10
 
 
+@dataclass(slots=True)
+class ViewerCameraConfig:
+    """MuJoCo free camera 的初始视角配置。"""
+
+    lookat: list[float] | None = None
+    distance: float | None = None
+    azimuth: float | None = None
+    elevation: float | None = None
+
+
+def apply_viewer_camera(
+    camera: mujoco.MjvCamera,
+    camera_config: ViewerCameraConfig | None,
+) -> None:
+    """把配置里的初始视角写到 MuJoCo viewer camera。
+
+    这些参数都只影响“窗口刚打开时看向哪里、离多远、从哪个角度看”。
+    它们不改变机器人模型本身的位置，也不改变 world/base/flange/tool 的定义。
+    """
+    if camera_config is None:
+        return
+    if camera_config.lookat is not None:
+        camera.lookat[:] = [float(value) for value in camera_config.lookat]
+    if camera_config.distance is not None:
+        camera.distance = float(camera_config.distance)
+    if camera_config.azimuth is not None:
+        camera.azimuth = float(camera_config.azimuth)
+    if camera_config.elevation is not None:
+        camera.elevation = float(camera_config.elevation)
+
+
 def _reset_user_scene(user_scn: mujoco.MjvScene) -> None:
     user_scn.ngeom = 0
 
@@ -229,6 +260,7 @@ def replay_cartesian_experiment_in_viewer(
     control_period: float,
     playback_speed: float,
     frame_config: FrameVisualizationConfig,
+    camera_config: ViewerCameraConfig | None = None,
     tool_frame: ToolFrameConfig | None = None,
     startup_pause_seconds: float = 0.8,
     keep_open_after_replay: bool = True,
@@ -242,6 +274,7 @@ def replay_cartesian_experiment_in_viewer(
 
     data = mujoco.MjData(model_context.model)
     with viewer.launch_passive(model_context.model, data) as viewer_handle:
+        apply_viewer_camera(viewer_handle.cam, camera_config)
         viewer_handle.sync()
         if startup_pause_seconds > 0:
             time.sleep(startup_pause_seconds)

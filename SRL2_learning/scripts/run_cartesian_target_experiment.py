@@ -19,6 +19,7 @@ from srl2_learning.adapters.cartesian_visualization import (
     export_cartesian_tracking_csv,
 )
 from srl2_learning.adapters.frame_visualizer import FrameVisualizationConfig, replay_cartesian_experiment_in_viewer
+from srl2_learning.adapters.frame_visualizer import ViewerCameraConfig
 from srl2_learning.experiments.cartesian_target_experiment import (
     run_multi_target_experiment,
     run_single_target_experiment,
@@ -89,6 +90,15 @@ def _build_frame_visualization_config(config: dict) -> FrameVisualizationConfig:
         world_frame_origin=[float(value) for value in config.get("world_frame_origin", [0.0, 0.0, 0.0])],
         print_frame_pose_each_step=bool(config.get("print_frame_pose_each_step", False)),
         print_frame_pose_every_n_steps=int(config.get("print_frame_pose_every_n_steps", 10)),
+    )
+
+
+def _build_viewer_camera_config(config: dict) -> ViewerCameraConfig:
+    return ViewerCameraConfig(
+        lookat=[float(value) for value in config.get("viewer_camera_lookat", [0.0, 0.0, 0.85])],
+        distance=float(config.get("viewer_camera_distance", 2.6)),
+        azimuth=float(config.get("viewer_camera_azimuth", 135.0)),
+        elevation=float(config.get("viewer_camera_elevation", -18.0)),
     )
 
 
@@ -176,6 +186,7 @@ def main() -> None:
         joint_limit_overrides_degrees=config.get("joint_position_limits_degrees"),
     )
     frame_visualization_config = _build_frame_visualization_config(config)
+    viewer_camera_config = _build_viewer_camera_config(config)
 
     _print_coordinate_header(model_context, tool_frame, bool(config["use_tool_frame"]), target_position, real_mesh_config_path, tool_config_path)
 
@@ -211,6 +222,7 @@ def main() -> None:
                 control_period=config["control_period_seconds"],
                 playback_speed=float(config.get("viewer_playback_speed", 0.5)),
                 frame_config=frame_visualization_config,
+                camera_config=viewer_camera_config,
                 tool_frame=tool_frame if config["use_tool_frame"] else None,
                 target_position=target_position,
                 target_positions=result.target_positions,
@@ -235,6 +247,7 @@ def main() -> None:
                 control_period=config["control_period_seconds"],
                 playback_speed=float(config.get("viewer_playback_speed", 0.5)),
                 frame_config=frame_visualization_config,
+                camera_config=viewer_camera_config,
                 tool_frame=tool_frame if config["use_tool_frame"] else None,
                 target_position=result.target_positions[-1],
                 target_positions=result.target_positions,
@@ -265,6 +278,7 @@ def main() -> None:
                 control_period=config["control_period_seconds"],
                 playback_speed=float(config.get("viewer_playback_speed", 0.5)),
                 frame_config=frame_visualization_config,
+                camera_config=viewer_camera_config,
                 tool_frame=tool_cases[0],
                 target_position=target_position,
                 target_positions=[target_position],

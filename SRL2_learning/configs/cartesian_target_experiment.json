@@ -6,11 +6,11 @@
     [0.186802, -0.441837, 1.064071],
     [0.056339, -0.561542, 0.797476]
   ],
-  "initial_joint_positions": [0.0, -1.5708, -1.2],
+  "initial_joint_positions": [0.0, -1.5708, -1.2], 
   "joint_position_limits_degrees": {
     "J1": [-170.0, 170.0],
     "J2": [-170.0, 10.0],
-    "J3": [-170.0, 170.0]
+    "J3": [-70.0, 110]
   },
   "hold_steps": 20,
   "ik_method": "damped_least_squares",
@@ -45,6 +45,10 @@
   "print_frame_pose_each_step": false,
   "print_frame_pose_every_n_steps": 10,
   "viewer_playback_speed": 0.5,
+  "viewer_camera_lookat": [0.0, 0.0, 1.0],
+  "viewer_camera_distance": 1.8,
+  "viewer_camera_azimuth": 30.0,
+  "viewer_camera_elevation": -18.0,
   "real_mesh_config_path": "urdf_real_mesh_demo_config.json",
   "export_directory_name": "cartesian_target_experiment",
   "plot_title_prefix": "末端坐标驱动实验"

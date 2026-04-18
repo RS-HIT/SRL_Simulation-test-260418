@@ -32,7 +32,12 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from srl2_learning.adapters.frame_visualizer import FrameVisualizationConfig, update_frame_visualization
+from srl2_learning.adapters.frame_visualizer import (
+    FrameVisualizationConfig,
+    ViewerCameraConfig,
+    apply_viewer_camera,
+    update_frame_visualization,
+)
 from srl2_learning.kinematics.forward_kinematics import compute_forward_kinematics
 from srl2_learning.kinematics.model_context import load_real_mesh_model_context
 from srl2_learning.kinematics.tool_frame import load_tool_frame_config
@@ -49,6 +54,14 @@ class JointAngleTunerApp:
         self.real_mesh_config_path = (self.experiment_config_path.parent / self.experiment_config["real_mesh_config_path"]).resolve()
         self.tool_frame_config_path = (self.experiment_config_path.parent / self.experiment_config["tool_frame_config_path"]).resolve()
         self.tool_frame = load_tool_frame_config(self.tool_frame_config_path)
+        # 这四个参数专门控制“viewer 刚打开时相机站在哪里、看向哪里”。
+        # 想调整初始视窗，不要改 world/base/flange/tool 的定义，优先改这里对应的配置项。
+        self.viewer_camera_config = ViewerCameraConfig(
+            lookat=[float(value) for value in self.experiment_config.get("viewer_camera_lookat", [0.0, 0.0, 0.85])],
+            distance=float(self.experiment_config.get("viewer_camera_distance", 2.6)),
+            azimuth=float(self.experiment_config.get("viewer_camera_azimuth", 135.0)),
+            elevation=float(self.experiment_config.get("viewer_camera_elevation", -18.0)),
+        )
 
         self.model_context = load_real_mesh_model_context(
             real_mesh_config_path=self.real_mesh_config_path,
@@ -67,6 +80,8 @@ class JointAngleTunerApp:
         self.current_joint_positions = self.model_context.clamp_joint_positions(initial)
         self.observed_min_positions = self.current_joint_positions.copy()
         self.observed_max_positions = self.current_joint_positions.copy()
+        self.latest_flange_position_text = "-"
+        self.latest_tool_position_text = "-"
 
         self.state_lock = threading.Lock()
         self.stop_event = threading.Event()
@@ -190,12 +205,8 @@ class JointAngleTunerApp:
             current_positions = self.current_joint_positions.copy()
             observed_min = self.observed_min_positions.copy()
             observed_max = self.observed_max_positions.copy()
-
-        fk_result = compute_forward_kinematics(
-            context=self.model_context,
-            joint_positions=current_positions.tolist(),
-            tool_frame=self.tool_frame if self.experiment_config.get("use_tool_frame", False) else None,
-        )
+            flange_position_text = self.latest_flange_position_text
+            tool_position_text = self.latest_tool_position_text
 
         for index, joint_name in enumerate(self.model_context.joint_names):
             current_rad = float(current_positions[index])
@@ -213,9 +224,9 @@ class JointAngleTunerApp:
             )
 
         if self.flange_label is not None:
-            self.flange_label.config(text=f"flange: {fk_result.flange_position}")
+            self.flange_label.config(text=f"flange: {flange_position_text}")
         if self.tool_label is not None:
-            self.tool_label.config(text=f"tool: {fk_result.tool_position}")
+            self.tool_label.config(text=f"tool: {tool_position_text}")
         if self.status_label is not None:
             status_text = "viewer 状态: 已关闭" if self.stop_event.is_set() else "viewer 状态: 运行中"
             if self.viewer_exception_message:
@@ -274,6 +285,8 @@ class JointAngleTunerApp:
         )
         try:
             with viewer.launch_passive(self.model_context.model, self.model_context.data) as viewer_handle:
+                apply_viewer_camera(viewer_handle.cam, self.viewer_camera_config)
+                viewer_handle.sync()
                 while viewer_handle.is_running() and not self.stop_event.is_set():
                     with self.state_lock:
                         current_positions = self.current_joint_positions.copy()
@@ -283,6 +296,9 @@ class JointAngleTunerApp:
                         joint_positions=current_positions.tolist(),
                         tool_frame=self.tool_frame if self.experiment_config.get("use_tool_frame", False) else None,
                     )
+                    with self.state_lock:
+                        self.latest_flange_position_text = str(fk_result.flange_position)
+                        self.latest_tool_position_text = str(fk_result.tool_position)
                     update_frame_visualization(
                         user_scn=viewer_handle.user_scn,
                         frame_config=frame_config,

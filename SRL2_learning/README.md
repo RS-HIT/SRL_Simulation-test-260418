@@ -208,3 +208,25 @@ python SRL2_learning/scripts/run_cartesian_target_experiment.py --experiment-mod
 
 - [14_末端坐标驱动实验说明.md](/e:/project/codetest/SRL2_learning/docs/14_末端坐标驱动实验说明.md)
 - [13_URDF真实网格仿真说明.md](/e:/project/codetest/SRL2_learning/docs/13_URDF真实网格仿真说明.md)
+
+## Viewer 初始视角怎么调
+
+如果你觉得 MuJoCo viewer 一打开时的朝向和位置不合适，现在统一改这里：
+
+- [cartesian_target_experiment.json](/e:/project/codetest/SRL2_learning/configs/cartesian_target_experiment.json)
+
+关键字段：
+
+- `viewer_camera_lookat`
+- `viewer_camera_distance`
+- `viewer_camera_azimuth`
+- `viewer_camera_elevation`
+
+这些字段同时会影响：
+
+- [debug_joint_angle_tuner.py](/e:/project/codetest/SRL2_learning/scripts/debug_joint_angle_tuner.py)
+- [run_cartesian_target_experiment.py](/e:/project/codetest/SRL2_learning/scripts/run_cartesian_target_experiment.py)
+
+更详细的调整说明看：
+
+- [18_关节角拖动调试器说明.md](/e:/project/codetest/SRL2_learning/docs/18_关节角拖动调试器说明.md)
