@@ -45,6 +45,10 @@ if [[ -n "$WSL_SYNC_DIR" ]]; then
       RSYNC_EXCLUDE_ARGS+=("--exclude" "$pattern")
     fi
   done
-  rsync -a "${RSYNC_EXCLUDE_ARGS[@]}" "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
+  if [[ ${#RSYNC_EXCLUDE_ARGS[@]} -gt 0 ]]; then
+    rsync -a "${RSYNC_EXCLUDE_ARGS[@]}" "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
+  else
+    rsync -a "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
+  fi
   echo "已完成 WSL 同步: $SOURCE_DIR -> $WSL_SYNC_DIR"
 fi
