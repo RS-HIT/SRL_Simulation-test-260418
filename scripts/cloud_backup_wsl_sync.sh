@@ -22,12 +22,12 @@ PROJECT_NAME="$(basename "$SOURCE_DIR")"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 ARCHIVE_PATH="$CLOUD_BACKUP_DIR/${PROJECT_NAME}_${TIMESTAMP}.tar.gz"
 
-tar --exclude-vcs -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
+tar -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
 echo "已完成云端备份: $ARCHIVE_PATH"
 
 if [[ -n "$WSL_SYNC_DIR" ]]; then
   WSL_SYNC_DIR="$(realpath -m "$WSL_SYNC_DIR")"
   mkdir -p "$WSL_SYNC_DIR"
-  rsync -a --delete --exclude ".git/" "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
+  rsync -a --exclude ".git/" "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
   echo "已完成 WSL 同步: $SOURCE_DIR -> $WSL_SYNC_DIR"
 fi
