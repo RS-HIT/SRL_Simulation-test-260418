@@ -22,8 +22,13 @@ PROJECT_NAME="$(basename "$SOURCE_DIR")"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 ARCHIVE_PATH="$CLOUD_BACKUP_DIR/${PROJECT_NAME}_${TIMESTAMP}.tar.gz"
 BACKUP_EXCLUDE_FILE="${BACKUP_EXCLUDE_FILE:-}"
+SYNC_EXCLUDES="${SYNC_EXCLUDES:-.git/}"
 
 if [[ -n "$BACKUP_EXCLUDE_FILE" ]]; then
+  if [[ ! -f "$BACKUP_EXCLUDE_FILE" ]]; then
+    echo "错误: BACKUP_EXCLUDE_FILE 不存在: $BACKUP_EXCLUDE_FILE"
+    exit 1
+  fi
   tar --exclude-from "$BACKUP_EXCLUDE_FILE" -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
 else
   tar -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
@@ -33,6 +38,13 @@ echo "已完成云端备份: $ARCHIVE_PATH"
 if [[ -n "$WSL_SYNC_DIR" ]]; then
   WSL_SYNC_DIR="$(realpath -m "$WSL_SYNC_DIR")"
   mkdir -p "$WSL_SYNC_DIR"
-  rsync -a --exclude ".git/" "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
+  RSYNC_EXCLUDE_ARGS=()
+  IFS=',' read -r -a EXCLUDE_PATTERNS <<< "$SYNC_EXCLUDES"
+  for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    if [[ -n "$pattern" ]]; then
+      RSYNC_EXCLUDE_ARGS+=("--exclude" "$pattern")
+    fi
+  done
+  rsync -a "${RSYNC_EXCLUDE_ARGS[@]}" "$SOURCE_DIR"/ "$WSL_SYNC_DIR"/
   echo "已完成 WSL 同步: $SOURCE_DIR -> $WSL_SYNC_DIR"
 fi
