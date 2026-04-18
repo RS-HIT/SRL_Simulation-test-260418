@@ -41,6 +41,7 @@ if [[ -n "$WSL_SYNC_DIR" ]]; then
   RSYNC_EXCLUDE_ARGS=()
   IFS=',' read -r -a EXCLUDE_PATTERNS <<< "$SYNC_EXCLUDES"
   for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    # 去除每个排除项前后空白，兼容 "a, b ,c" 这类输入
     pattern="${pattern#"${pattern%%[![:space:]]*}"}"
     pattern="${pattern%"${pattern##*[![:space:]]}"}"
     if [[ -n "$pattern" ]]; then

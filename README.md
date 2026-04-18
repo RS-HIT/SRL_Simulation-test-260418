@@ -29,9 +29,11 @@ bash scripts/cloud_backup_wsl_sync.sh <项目目录> <云端备份目录> [WSL�
 ```bash
 bash scripts/cloud_backup_wsl_sync.sh \
   /home/runner/work/SRL_Simulation-test-260418/SRL_Simulation-test-260418 \
-  /mnt/c/Users/<你的用户名>/OneDrive/project_backups \
+  /mnt/c/Users/<你的用户名>/CloudStorage/project_backups \
   /mnt/c/Users/<你的用户名>/Desktop/SRL_Simulation-test-260418
 ```
+
+`CloudStorage` 可替换为你的实际云盘目录（如 OneDrive、Dropbox、Google Drive 等）。
 
 执行后会：
 
