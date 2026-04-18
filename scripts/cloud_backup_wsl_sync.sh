@@ -21,8 +21,13 @@ mkdir -p "$CLOUD_BACKUP_DIR"
 PROJECT_NAME="$(basename "$SOURCE_DIR")"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 ARCHIVE_PATH="$CLOUD_BACKUP_DIR/${PROJECT_NAME}_${TIMESTAMP}.tar.gz"
+BACKUP_EXCLUDE_FILE="${BACKUP_EXCLUDE_FILE:-}"
 
-tar -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
+if [[ -n "$BACKUP_EXCLUDE_FILE" ]]; then
+  tar --exclude-from "$BACKUP_EXCLUDE_FILE" -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
+else
+  tar -czf "$ARCHIVE_PATH" -C "$SOURCE_DIR" .
+fi
 echo "已完成云端备份: $ARCHIVE_PATH"
 
 if [[ -n "$WSL_SYNC_DIR" ]]; then
